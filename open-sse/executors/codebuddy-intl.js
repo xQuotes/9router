@@ -1,4 +1,5 @@
 import { DefaultExecutor } from "./default.js";
+import { codebuddyConversationHeaders } from "../utils/codebuddyIdentity.js";
 
 /**
  * CodeBuddyIntlExecutor — talks to https://www.codebuddy.ai/v2/chat/completions
@@ -11,6 +12,15 @@ import { DefaultExecutor } from "./default.js";
 export class CodeBuddyIntlExecutor extends DefaultExecutor {
   constructor() {
     super("codebuddy-intl");
+  }
+
+  // Pass the gateway's channel verification (HTTP 400 / code 11128 "conversation
+  // id missing") by attaching the official-client session + trace header family on
+  // every request. See ../utils/codebuddyIdentity.js for the captured envelope.
+  buildHeaders(credentials, stream = true, url, model, body) {
+    const headers = super.buildHeaders(credentials, stream, url, model, body);
+    Object.assign(headers, codebuddyConversationHeaders());
+    return headers;
   }
 
   transformRequest(model, body, stream, credentials) {
