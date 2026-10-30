@@ -65,7 +65,9 @@ export async function handleStreamingResponse({ providerResponse, provider, mode
   // and clamped so untrusted upstream text never reaches the client verbatim
   // (the UI may render error.message as HTML).
   const upstreamContentType = (providerResponse.headers.get('content-type') || '').toLowerCase();
-  if (upstreamContentType && !upstreamContentType.includes('text/event-stream') && !upstreamContentType.includes('application/json')) {
+  // ndjson (ollama /api/chat streaming) is line-delimited JSON — the translator reads it line-by-line, so it pipes fine.
+  const isLineJson = upstreamContentType.includes('ndjson') || upstreamContentType.includes('jsonl');
+  if (upstreamContentType && !isLineJson && !upstreamContentType.includes('text/event-stream') && !upstreamContentType.includes('application/json')) {
     const bodyText = await providerResponse.text().catch(() => '');
     const titleMatch = bodyText.match(/<title>([^<]+)<\/title>/i);
     const sanitizedTitle = (titleMatch?.[1] || '').replace(/<[^>]*>/g, '').replace(/[\r\n]+/g, ' ').trim().slice(0, 160);
